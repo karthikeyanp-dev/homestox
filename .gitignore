@@ -1,0 +1,69 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# Secrets & service accounts (do NOT commit these)
+.env
+.env.*
+*.pem
+*-firebase-adminsdk-*.json
+firebase-adminsdk*.json
+serviceAccount*.json
+*-service-account*.json
+google-services.json
+GoogleService-Info.plist
+
+# Keep example/template files
+!.env.example
+!google-services.example.json
+
+# Supabase CLI temp files (contains project ref & pooler URL)
+supabase/.temp/
+
+# IDE / editor local config
+.idea/
+.claude/settings.local.json
+
+# Local planning/building docs (kept private, not in public repo)
+docs/
+
+# Qoder IDE generated docs & knowledge (auto-generated, keep local)
+.qoder/

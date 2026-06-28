@@ -1,0 +1,30 @@
+{
+  "_comment": "Copy this file to google-services.json and fill in values from your own Firebase project (Firebase Console > Project Settings > Add Android app with your package name, e.g. com.codedelights.homestox). Never commit the real google-services.json to a public repo.",
+  "project_info": {
+    "project_number": "YOUR_FIREBASE_PROJECT_NUMBER",
+    "project_id": "your-firebase-project-id",
+    "storage_bucket": "your-firebase-project-id.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:YOUR_PROJECT_NUMBER:android:YOUR_ANDROID_APP_ID",
+        "android_client_info": {
+          "package_name": "com.codedelights.homestox"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "YOUR_ANDROID_API_KEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

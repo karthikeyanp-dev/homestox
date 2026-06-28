@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "HomeStox",
+    "slug": "homestox",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.codedelights.homestox",
+      "buildNumber": "1",
+      "icon": "./assets/ios/AppIcon~ios-marketing.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.codedelights.homestox",
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android/res/mipmap-xxxhdpi/homestox_foreground.png",
+        "backgroundImage": "./assets/android/res/mipmap-xxxhdpi/homestox_background.png",
+        "monochromeImage": "./assets/android/res/mipmap-xxxhdpi/homestox_monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/web/favicon.ico"
+    },
+    "owner": "codedelights",
+    "extra": {
+      "eas": {
+        "projectId": "e282281f-79c6-4a19-ac4c-923e21b9d721"
+      }
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#6366F1"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enablePngCrunchInReleaseBuilds": true
+          }
+        }
+      ]
+    ],
+    "scheme": "homestox"
+  }
+}

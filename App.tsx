@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider as PaperProvider } from 'react-native-paper';
-import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
+import { QueryClientProvider, focusManager } from '@tanstack/react-query';
+import { queryClient } from './src/utils/queryClient';
 import { Appearance, AppState, AppStateStatus } from 'react-native';
 import Notifications from './src/utils/notifications';
 import AppNavigator from './src/navigation';
@@ -28,17 +29,6 @@ import { GlobalUI } from './src/components/GlobalUI';
 function onAppStateChange(status: AppStateStatus) {
   focusManager.setFocused(status === 'active');
 }
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30,   // 30 minutes (formerly cacheTime)
-      retry: 2,
-      refetchOnWindowFocus: true,
-    },
-  },
-});
 
 function ThemedApp() {
   const { effectiveTheme, syncSystemTheme } = useThemeStore();

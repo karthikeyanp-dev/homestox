@@ -7,3 +7,4 @@ export { ItemActionsModal } from './ItemActionsModal';
 export { ScreenHeader } from './ScreenHeader';
 export { InviteMemberModal } from './InviteMemberModal';
 export { NotificationProvider } from './NotificationProvider';
+export { DeleteAccountDialog } from './DeleteAccountDialog';

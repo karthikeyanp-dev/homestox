@@ -22,11 +22,10 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         // The global foreground handler (banner/sound/badge) is registered once
         // at app startup in App.tsx. Here we only attach the tap-response
         // listener so tapping a notification refreshes the relevant queries.
-        const tapSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+        const tapSubscription = Notifications.addNotificationResponseReceivedListener(() => {
             queryClient.invalidateQueries({ queryKey: ['inventory'] });
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
             queryClient.invalidateQueries({ queryKey: ['unread-notifications'] });
-            console.log('Notification tapped:', response.notification.request.content.data);
         });
 
         return () => {

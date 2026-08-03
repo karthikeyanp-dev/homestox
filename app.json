@@ -41,6 +41,7 @@
       }
     },
     "plugins": [
+      "./plugins/withAdiRegistration",
       "expo-font",
       [
         "expo-notifications",

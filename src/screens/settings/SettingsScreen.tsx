@@ -12,14 +12,16 @@ import { useDialogStore } from '../../store/useDialogStore';
 import { memberService } from '../../services/memberService';
 import { notificationService } from '../../services/notificationService';
 import { profileService } from '../../services/profileService';
+import { DeleteAccountDialog } from '../../components/DeleteAccountDialog';
 import { getDisplayName, getInitials } from '../../utils/profileDisplay';
+import { LEGAL_URLS, SUPPORT_MAILTO } from '../../constants/links';
 import { spacing, borderRadius } from '../../theme';
 
 export default function SettingsScreen() {
     const theme = useTheme();
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<any>();
-    const { user, profile, signOut, loadProfile } = useAuthStore();
+    const { user, profile, signOut, deleteAccount, loadProfile } = useAuthStore();
     const { currentHome, createHome, getSortedHomes } = useHomeStore();
     const { themeMode, setThemeMode } = useThemeStore();
     const [showCreateHome, setShowCreateHome] = useState(false);
@@ -28,6 +30,7 @@ export default function SettingsScreen() {
     const [showEditName, setShowEditName] = useState(false);
     const [editedName, setEditedName] = useState('');
     const [savingName, setSavingName] = useState(false);
+    const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
     // Most-recently-accessed first; homes never accessed fall to the bottom in source order.
     const sortedHomes = getSortedHomes();
@@ -58,6 +61,21 @@ export default function SettingsScreen() {
                 { text: 'Sign Out', style: 'destructive', onPress: signOut },
             ]
         );
+    };
+
+    const handleDeleteAccount = async () => {
+        try {
+            await deleteAccount();
+            // The navigator swaps to the auth stack as soon as the session
+            // clears, so this dialog unmounts with it — no explicit close needed.
+            useToastStore.getState().showToast('Your account has been deleted.', 'success');
+        } catch (error: any) {
+            setShowDeleteAccount(false);
+            useToastStore.getState().showToast(
+                error?.message ?? 'We could not delete your account. Please try again.',
+                'error'
+            );
+        }
     };
 
     const handleThemeChange = () => {
@@ -268,7 +286,7 @@ export default function SettingsScreen() {
                         title="Send Feedback"
                         left={(props) => <List.Icon {...props} icon="message-outline" />}
                         right={(props) => <List.Icon {...props} icon="chevron-right" />}
-                        onPress={() => Linking.openURL('mailto:support@codedelights.com')}
+                        onPress={() => Linking.openURL(SUPPORT_MAILTO)}
                         style={styles.listItem}
                     />
                     <Divider style={styles.divider} />
@@ -276,7 +294,15 @@ export default function SettingsScreen() {
                         title="Privacy Policy"
                         left={(props) => <List.Icon {...props} icon="shield-outline" />}
                         right={(props) => <List.Icon {...props} icon="chevron-right" />}
-                        onPress={() => Linking.openURL('https://homestox.codedelights.com/privacy')}
+                        onPress={() => Linking.openURL(LEGAL_URLS.privacy)}
+                        style={styles.listItem}
+                    />
+                    <Divider style={styles.divider} />
+                    <List.Item
+                        title="Terms of Service"
+                        left={(props) => <List.Icon {...props} icon="file-document-outline" />}
+                        right={(props) => <List.Icon {...props} icon="chevron-right" />}
+                        onPress={() => Linking.openURL(LEGAL_URLS.terms)}
                         style={styles.listItem}
                     />
                 </View>
@@ -291,7 +317,33 @@ export default function SettingsScreen() {
                 >
                     Sign Out
                 </Button>
+
+                {/* Danger Zone — account deletion is required by Google Play for
+                    any app that lets users create an account. */}
+                <View style={styles.dangerZone}>
+                    <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.error }]}>
+                        DANGER ZONE
+                    </Text>
+                    <List.Item
+                        title="Delete Account"
+                        description="Permanently delete your account and data"
+                        left={(props) => <List.Icon {...props} icon="delete-forever-outline" color={theme.colors.error} />}
+                        right={(props) => <List.Icon {...props} icon="chevron-right" />}
+                        onPress={() => setShowDeleteAccount(true)}
+                        style={styles.listItem}
+                        titleStyle={{ color: theme.colors.error, fontWeight: '600' }}
+                    />
+                </View>
             </ScrollView>
+
+            {user && (
+                <DeleteAccountDialog
+                    visible={showDeleteAccount}
+                    userId={user.id}
+                    onDismiss={() => setShowDeleteAccount(false)}
+                    onConfirm={handleDeleteAccount}
+                />
+            )}
 
              {/* Edit Name Dialog */}
              <Portal>
@@ -420,5 +472,11 @@ const styles = StyleSheet.create({
         marginHorizontal: spacing.md,
         marginTop: spacing.md,
         borderWidth: 1.5,
+    },
+    dangerZone: {
+        marginHorizontal: spacing.md,
+        marginTop: spacing.xl,
+        borderRadius: borderRadius.lg,
+        overflow: 'hidden',
     },
 });

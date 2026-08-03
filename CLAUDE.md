@@ -29,8 +29,10 @@ Copy `.env.example` to `.env` and fill in:
 ## Backend Setup
 
 - Apply the SQL files in `supabase/migrations/` via the Supabase SQL Editor (no automated runner).
-- Deploy the Edge Function: `supabase functions deploy send-home-notification`.
-- Set Supabase secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) for the Edge Function.
+- Deploy the Edge Functions:
+  - `supabase functions deploy send-home-notification`
+  - `supabase functions deploy delete-account`
+- Set Supabase secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) for the Edge Functions.
 
 ## Repository Layout
 
@@ -45,8 +47,23 @@ Copy `.env.example` to `.env` and fill in:
 
 - Shared types live in `src/types/index.ts`.
 - Item status is always one of: `'enough' | 'nearing' | 'finished'`.
-- Row Level Security is enabled on all tables; the Edge Function uses the service-role key server-side only — never ship it to the client.
+- Row Level Security is enabled on all tables; the Edge Functions use the service-role key server-side only — never ship it to the client.
 - Icons use `MaterialCommunityIcons` from `@expo/vector-icons`.
+- External URLs and the support address live in `src/constants/links.ts`. They must match the Play Console listing exactly, so never inline them at the call site.
+- The shared `QueryClient` lives in `src/utils/queryClient.ts` (not `App.tsx`) so the auth store can clear it on sign-out and account deletion.
+
+## Account Deletion
+
+Google Play requires both an in-app deletion path and a public web one for any
+app that creates accounts. The in-app half is `DeleteAccountDialog` →
+`useAuthStore.deleteAccount` → `accountService` → the `delete-account` Edge
+Function, which is the only place a user is actually removed.
+
+The function derives the target user from the JWT, never from the request body.
+Before deleting the auth user it resolves their memberships, deletes any home
+where they were the sole member, and promotes the longest-tenured survivor in
+shared homes where they were the only `owner` — RLS gates home management on
+that role, so skipping the handover would strand the remaining members.
 
 ## Repo Status
 

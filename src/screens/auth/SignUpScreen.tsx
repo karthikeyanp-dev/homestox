@@ -4,11 +4,13 @@ import {
     StyleSheet,
     Pressable,
     Animated,
+    Linking,
 } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { supabase } from '../../utils/supabase';
 import { useNavigation } from '@react-navigation/native';
+import { LEGAL_URLS } from '../../constants/links';
 import { spacing, borderRadius } from '../../theme';
 import { useToastStore } from '../../store/useToastStore';
 import { isValidEmail } from '../../utils/emailValidation';
@@ -198,15 +200,23 @@ export default function SignUpScreen() {
                     disabled={loading || !fullNameValid || !emailValidDebounced || !passwordMeetsFloor}
                 />
 
-                {/* Terms — rendered as plain styled text (no onPress) to avoid
-                    dead 404 links until real pages / an in-app screen exist. */}
+                {/* These now point at the live hosted pages. Both URLs must stay
+                    in sync with the Play Console listing — see constants/links. */}
                 <Text variant="bodySmall" style={[styles.termsText, { color: theme.colors.onSurfaceVariant }]}>
                     By creating an account, you agree to our{' '}
-                    <Text style={{ color: theme.colors.primary, fontWeight: '600' }}>
+                    <Text
+                        style={{ color: theme.colors.primary, fontWeight: '600' }}
+                        onPress={() => Linking.openURL(LEGAL_URLS.terms)}
+                        accessibilityRole="link"
+                    >
                         Terms of Service
                     </Text>
                     {' '}and{' '}
-                    <Text style={{ color: theme.colors.primary, fontWeight: '600' }}>
+                    <Text
+                        style={{ color: theme.colors.primary, fontWeight: '600' }}
+                        onPress={() => Linking.openURL(LEGAL_URLS.privacy)}
+                        accessibilityRole="link"
+                    >
                         Privacy Policy
                     </Text>
                     .

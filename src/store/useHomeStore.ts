@@ -17,6 +17,7 @@ interface HomeState {
     createHome: (name: string, userId: string) => Promise<void>;
     updateHome: (homeId: string, name: string) => Promise<void>;
     deleteHome: (homeId: string) => Promise<void>;
+    reset: () => void;
 }
 
 export const useHomeStore = create<HomeState>()(
@@ -117,6 +118,22 @@ export const useHomeStore = create<HomeState>()(
                     throw error;
                 }
             },
+            /**
+             * Clear all home state, including the persisted currentHomeId and
+             * access timestamps.
+             *
+             * Called on sign-out and account deletion. Without it the previous
+             * user's home selection survives in AsyncStorage, and the next
+             * account to sign in on this device inherits their sort order and
+             * briefly renders their home list before refreshHomes replaces it.
+             */
+            reset: () => set({
+                homes: [],
+                currentHome: null,
+                currentHomeId: null,
+                homeAccessTimes: {},
+                isLoading: false,
+            }),
         }),
         {
             name: 'home-storage',

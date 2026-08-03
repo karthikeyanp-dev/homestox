@@ -75,8 +75,8 @@ class NotificationService {
             });
         }
 
+        // Simulators/emulators cannot receive push tokens.
         if (!Device.isDevice) {
-            console.log('Must use physical device for Push Notifications');
             return null;
         }
 
@@ -88,8 +88,8 @@ class NotificationService {
             finalStatus = status;
         }
 
+        // Permission denied — the caller treats null as "no push for this device".
         if (finalStatus !== 'granted') {
-            console.log('Failed to get push token for push notification!');
             return null;
         }
 
@@ -151,6 +151,18 @@ class NotificationService {
             await this.removePushToken(userId, token);
         }
 
+        await this.clearStoredPushToken();
+    }
+
+    /**
+     * Forget this device's cached token without touching the database.
+     *
+     * Used after account deletion, where the push_tokens row has already been
+     * removed by the auth.users cascade and the owning user no longer exists —
+     * so there is nothing to delete server-side, only a stale local handle to
+     * drop before the next sign-in registers a fresh one.
+     */
+    async clearStoredPushToken(): Promise<void> {
         await AsyncStorage.removeItem(PUSH_TOKEN_STORAGE_KEY);
     }
 

@@ -10,6 +10,8 @@ const stub = (id: string) =>
 
 export default defineConfig({
   test: {
+    // forks pool hangs spawning workers on Windows; threads works everywhere.
+    pool: 'threads',
     environment: 'jsdom',
     globals: true,
     include: ['src/**/*.{test,spec}.{ts,tsx}'],

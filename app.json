@@ -24,6 +24,11 @@
       "package": "com.codedelights.homestox",
       "versionCode": 1,
       "googleServicesFile": "./google-services.json",
+      "permissions": ["android.permission.INTERNET"],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/android/res/mipmap-xxxhdpi/homestox_foreground.png",
         "backgroundImage": "./assets/android/res/mipmap-xxxhdpi/homestox_background.png",

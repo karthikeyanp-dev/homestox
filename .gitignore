@@ -67,3 +67,12 @@ docs/
 
 # Qoder IDE generated docs & knowledge (auto-generated, keep local)
 .qoder/
+
+# Play Store listing production artifacts (screenshots, raw captures, vendored tooling)
+store-listing/
+
+# AI-generated scratch images
+vibe_images/
+
+# Firebase Hosting local CLI cache
+website/.firebase/

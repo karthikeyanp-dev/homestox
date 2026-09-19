@@ -60,45 +60,23 @@ export const memberService = {
     /**
      * Accept an invitation — adds user as member and marks invite accepted.
      */
-    async acceptInvitation(invitationId: string, userId: string): Promise<void> {
-        // 1. Get the invitation
-        const { data: invite, error: fetchError } = await supabase
-            .from('home_invitations')
-            .select('*')
-            .eq('id', invitationId)
-            .single();
+    async acceptInvitation(invitationId: string, _userId: string): Promise<void> {
+        // Membership and invitation state must change atomically on the server.
+        // Direct inserts would let a crafted client bypass the invitation flow.
+        const { error } = await supabase.rpc('accept_home_invitation', {
+            invitation_uuid: invitationId,
+        });
 
-        if (fetchError || !invite) throw new Error('Invitation not found.');
-        if (invite.status !== 'pending') throw new Error('This invitation is no longer pending.');
-
-        // 2. Add as member
-        const { error: memberError } = await supabase
-            .from('home_members')
-            .insert({
-                home_id: invite.home_id,
-                user_id: userId,
-                role: 'member',
-            });
-
-        if (memberError) throw memberError;
-
-        // 3. Mark invitation as accepted
-        const { error: updateError } = await supabase
-            .from('home_invitations')
-            .update({ status: 'accepted', updated_at: new Date().toISOString() })
-            .eq('id', invitationId);
-
-        if (updateError) throw updateError;
+        if (error) throw error;
     },
 
     /**
      * Reject an invitation.
      */
     async rejectInvitation(invitationId: string): Promise<void> {
-        const { error } = await supabase
-            .from('home_invitations')
-            .update({ status: 'rejected', updated_at: new Date().toISOString() })
-            .eq('id', invitationId);
+        const { error } = await supabase.rpc('reject_home_invitation', {
+            invitation_uuid: invitationId,
+        });
 
         if (error) throw error;
     },

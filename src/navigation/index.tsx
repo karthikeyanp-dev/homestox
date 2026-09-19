@@ -1,5 +1,10 @@
 import React, { useEffect } from 'react';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import {
+    NavigationContainer,
+    DefaultTheme,
+    DarkTheme,
+    createNavigationContainerRef,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Appearance, StatusBar } from 'react-native';
@@ -31,6 +36,10 @@ const AuthStack = createNativeStackNavigator();
 const OnboardingStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const SettingsStack = createNativeStackNavigator();
+
+// Allows notification responses received outside a screen component to route
+// users into the app once the navigator is ready.
+export const navigationRef = createNavigationContainerRef<any>();
 
 function AuthNavigator() {
     return (
@@ -263,7 +272,7 @@ export default function AppNavigator() {
                 barStyle={effectiveTheme === 'dark' ? 'light-content' : 'dark-content'}
                 backgroundColor={theme.colors.background}
             />
-            <NavigationContainer theme={navigationTheme}>
+            <NavigationContainer ref={navigationRef} theme={navigationTheme}>
                 <Stack.Navigator screenOptions={{ headerShown: false }}>
                     {!session ? (
                         <Stack.Screen name="Auth" component={AuthNavigator} />

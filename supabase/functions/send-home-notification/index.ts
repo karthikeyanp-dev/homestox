@@ -136,8 +136,12 @@ Deno.serve(async (req: Request) => {
       created_at: new Date().toISOString(),
     }));
 
-    const { error: insertError } = await serviceClient.from('notifications').insert(notificationRows);
-    if (insertError) {
+    const { data: insertedRows, error: insertError } = await serviceClient
+      .from('notifications')
+      .insert(notificationRows)
+      .select('id, user_id');
+
+    if (insertError || !insertedRows) {
       return new Response(JSON.stringify({ error: 'Failed to store notifications' }), {
         status: 500,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
@@ -146,7 +150,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: tokenRows, error: tokenError } = await serviceClient
       .from('push_tokens')
-      .select('push_token')
+      .select('user_id, push_token')
       .in('user_id', recipientIds);
 
     if (tokenError) {
@@ -156,9 +160,15 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const tokens = (tokenRows ?? []).map((row) => row.push_token).filter(Boolean);
+    const notificationIdByUser = new Map(insertedRows.map((row) => [row.user_id, row.id]));
+    const tokenEntries = (tokenRows ?? [])
+      .filter((row) => Boolean(row.push_token))
+      .map((row) => ({
+        token: row.push_token,
+        notificationId: notificationIdByUser.get(row.user_id),
+      }));
 
-    if (tokens.length === 0) {
+    if (tokenEntries.length === 0) {
       return new Response(JSON.stringify({ success: true, recipients: recipientIds.length, pushesSent: 0 }), {
         status: 200,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
@@ -177,15 +187,20 @@ Deno.serve(async (req: Request) => {
     // importance may be lower and cannot be raised after first creation.
     //
     // interruptionLevel: 'active' ensures iOS shows the banner prominently.
-    const pushMessages = tokens.map((token) => ({
-      to: token,
+    const pushMessages = tokenEntries.map((entry) => ({
+      to: entry.token,
       sound: 'default',
       title,
       body,
       priority: 'high',
       channelId: 'default',
       interruptionLevel: 'active',
-      data: data ?? {},
+      data: {
+        ...(data ?? {}),
+        notificationId: entry.notificationId,
+        homeId,
+        type,
+      },
     }));
 
     const expoResponse = await fetch('https://exp.host/--/api/v2/push/send', {
@@ -204,7 +219,7 @@ Deno.serve(async (req: Request) => {
     if (expoResult.data) {
       expoResult.data.forEach((ticket, index) => {
         if (ticket.status === 'error' && ticket.details?.error === 'DeviceNotRegistered') {
-          invalidTokens.push(tokens[index]);
+          invalidTokens.push(tokenEntries[index].token);
         }
       });
     }
@@ -217,7 +232,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         recipients: recipientIds.length,
-        pushesSent: tokens.length,
+        pushesSent: tokenEntries.length,
         invalidTokensRemoved: invalidTokens.length,
       }),
       {

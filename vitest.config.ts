@@ -16,6 +16,10 @@ export default defineConfig({
     globals: true,
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     setupFiles: ['./src/__tests__/setup.ts'],
+    // Windows can hang when Vitest fans this lightweight suite out to several
+    // worker threads. One worker is deterministic and still finishes quickly.
+    fileParallelism: false,
+    maxWorkers: 1,
   },
   resolve: {
     alias: {

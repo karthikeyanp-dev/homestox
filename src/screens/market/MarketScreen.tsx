@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, FlatList, StyleSheet, RefreshControl, Pressable, Share } from 'react-native';
-import { Text, useTheme, Chip, FAB, Surface, Button } from 'react-native-paper';
+import { Text, useTheme, Chip, Surface, Button } from 'react-native-paper';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useHomeStore } from '../../store/useHomeStore';
@@ -12,6 +12,7 @@ import { ShoppingItem } from '../../components/ShoppingItem';
 import { ItemListSkeleton } from '../../components/Skeleton';
 import { EmptyShoppingList } from '../../components/EmptyState';
 import { useToastStore } from '../../store/useToastStore';
+import { useDialogStore } from '../../store/useDialogStore';
 import { buildShoppingShareText } from '../../utils/shoppingShareText';
 import PurchaseModal from './PurchaseModal';
 import PriceHistoryModal from '../analytics/PriceHistoryModal';
@@ -23,6 +24,7 @@ export default function MarketScreen() {
     const { currentHome } = useHomeStore();
     const { effectiveTheme } = useThemeStore();
     const showToast = useToastStore((s) => s.showToast);
+    const showDialog = useDialogStore((s) => s.showDialog);
     const queryClient = useQueryClient();
     const theme = useTheme();
 
@@ -41,22 +43,28 @@ export default function MarketScreen() {
     });
 
     const toggleRequiredMutation = useMutation({
-        mutationFn: ({ itemId, notRequired }: { itemId: string; notRequired: boolean }) =>
+        mutationFn: ({ itemId, notRequired }: { itemId: string; itemName: string; notRequired: boolean }) =>
             inventoryService.toggleNotRequired(itemId, notRequired),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['inventory', currentHome?.id] });
+        onSuccess: (_item, { itemName, notRequired }) => {
+            showToast(
+                notRequired
+                    ? `"${itemName}" moved to Skipped.`
+                    : `"${itemName}" added back to your shopping list.`,
+                'success'
+            );
+            return queryClient.invalidateQueries({ queryKey: ['inventory', currentHome?.id] });
+        },
+        onError: () => {
+            showToast('Could not update the shopping list. Please try again.', 'error');
         },
     });
 
-    // Filter to only show items that need restocking (status !== 'enough')
-    // Include skipped items only when showSkipped is enabled
-    const allShoppingItems = useMemo(() => {
-        let result = items.filter(i => i.status !== 'enough');
-        if (!showSkipped) {
-            result = result.filter(i => !i.not_required);
-        }
-        return result;
-    }, [items, showSkipped]);
+    // Keep skipped restock items available even when the active list is empty.
+    const restockItems = useMemo(() => items.filter(i => i.status !== 'enough'), [items]);
+    const allShoppingItems = useMemo(
+        () => showSkipped ? restockItems : restockItems.filter(i => !i.not_required),
+        [restockItems, showSkipped]
+    );
 
     // Apply filters
     const filteredList = useMemo(() => {
@@ -118,10 +126,29 @@ export default function MarketScreen() {
     };
 
     const handleToggleRequired = (item: Item) => {
-        toggleRequiredMutation.mutate({
-            itemId: item.id,
-            notRequired: !item.not_required,
-        });
+        if (toggleRequiredMutation.isPending) return;
+
+        const updateRequired = (notRequired: boolean) => {
+            toggleRequiredMutation.mutate({
+                itemId: item.id,
+                itemName: item.name,
+                notRequired,
+            });
+        };
+
+        if (item.not_required) {
+            updateRequired(false);
+            return;
+        }
+
+        showDialog(
+            `Skip ${item.name}?`,
+            'This item will move to Skipped. You can add it back from Show skipped.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Skip item', onPress: () => updateRequired(true) },
+            ]
+        );
     };
 
     const handleRefresh = useCallback(() => {
@@ -146,7 +173,7 @@ export default function MarketScreen() {
     // Counts - calculate in single pass for efficiency
     const { urgentCount, lowCount, skippedCount, activeCount } = useMemo(() => {
         let urgent = 0, low = 0, skipped = 0, active = 0;
-        for (const item of allShoppingItems) {
+        for (const item of restockItems) {
             if (item.not_required) {
                 skipped++;
             } else {
@@ -156,10 +183,11 @@ export default function MarketScreen() {
             }
         }
         return { urgentCount: urgent, lowCount: low, skippedCount: skipped, activeCount: active };
-    }, [allShoppingItems]);
+    }, [restockItems]);
     const totalToBuy = urgentCount + lowCount;
 
     const hasItems = allShoppingItems.length > 0;
+    const hasRestockItems = restockItems.length > 0;
 
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -175,7 +203,7 @@ export default function MarketScreen() {
             />
 
             {/* Summary Cards - Inline with main content */}
-            {hasItems && !searchQuery && (
+            {hasRestockItems && !searchQuery && (
                 <View style={styles.summaryContainer}>
                     <Surface style={[styles.summaryCard, { backgroundColor: statusColors[effectiveTheme].finished.bg }]} elevation={0}>
                         <MaterialCommunityIcons
@@ -206,10 +234,16 @@ export default function MarketScreen() {
                     </Surface>
 
                     <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={showSkipped ? 'Hide skipped items' : 'Show skipped items'}
                         onPress={() => {
                             setShowSkipped(!showSkipped);
-                            if (filterType === 'skipped') {
+                            if (filterType === 'skipped' || (!showSkipped && activeCount === 0)) {
                                 setFilterType('all');
+                            }
+                            if (!showSkipped && activeCount === 0) {
+                                setSelectedCategory('all');
+                                setSearchQuery('');
                             }
                         }}
                         style={[
@@ -359,6 +393,29 @@ export default function MarketScreen() {
             {/* Main List */}
             {isLoading ? (
                 <ItemListSkeleton count={5} />
+            ) : !hasItems && hasRestockItems ? (
+                <View style={styles.emptyFilter}>
+                    <MaterialCommunityIcons name="cart-off" size={48} color={theme.colors.onSurfaceVariant} />
+                    <Text variant="titleLarge" style={{ color: theme.colors.onSurface, textAlign: 'center', marginTop: spacing.md }}>
+                        All remaining items are skipped
+                    </Text>
+                    <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center', marginTop: spacing.sm }}>
+                        Show skipped items to review them or add them back to your shopping list.
+                    </Text>
+                    <Button
+                        mode="contained"
+                        icon="eye-outline"
+                        onPress={() => {
+                            setShowSkipped(true);
+                            setFilterType('all');
+                            setSelectedCategory('all');
+                            setSearchQuery('');
+                        }}
+                        style={{ marginTop: spacing.lg }}
+                    >
+                        Show skipped
+                    </Button>
+                </View>
             ) : !hasItems ? (
                 <EmptyShoppingList />
             ) : filteredList.length === 0 ? (
@@ -430,6 +487,7 @@ export default function MarketScreen() {
                                     onPress={handleItemPress}
                                     onInfoPress={handleHistoryPress}
                                     onToggleRequired={handleToggleRequired}
+                                    toggleRequiredDisabled={toggleRequiredMutation.isPending}
                                     showToggleRequired
                                 />
                             </>
@@ -476,12 +534,15 @@ const styles = StyleSheet.create({
     },
     summaryContainer: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         paddingHorizontal: spacing.md,
         paddingTop: spacing.xs,
         gap: spacing.sm,
     },
     summaryCard: {
         flex: 1,
+        minWidth: 88,
+        minHeight: 44,
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: spacing.sm,
